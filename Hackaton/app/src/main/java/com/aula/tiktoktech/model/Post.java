@@ -1,7 +1,6 @@
 package com.aula.tiktoktech.model;
 
 import com.google.firebase.firestore.DocumentId;
-import com.google.firebase.firestore.ServerTimestamp;
 
 public class Post {
     @DocumentId private String id;
@@ -10,12 +9,15 @@ public class Post {
     private long likes;
     private long dislikes;
     private long comentarios;
-    @ServerTimestamp private long criadoEm;
+    private Long criadoEm;
 
     public Post() { }
     public Post(String url, String descricao) {
         this.url = url;
         this.descricao = descricao;
+        this.likes = 0L;
+        this.dislikes = 0L;
+        this.comentarios = 0L;
         this.criadoEm = System.currentTimeMillis();
     }
     public String getId() { return id; }
@@ -30,6 +32,6 @@ public class Post {
     public void setDislikes(long dislikes) { this.dislikes = dislikes; }
     public long getComentarios() { return comentarios; }
     public void setComentarios(long comentarios) { this.comentarios = comentarios; }
-    public long getCriadoEm() { return criadoEm; }
-    public void setCriadoEm(long criadoEm) { this.criadoEm = criadoEm; }
+    public Long getCriadoEm() { return criadoEm; }
+    public void setCriadoEm(Long criadoEm) { this.criadoEm = criadoEm; }
 }

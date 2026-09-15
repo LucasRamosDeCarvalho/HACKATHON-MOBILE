@@ -21,6 +21,10 @@
     <string name="hint_legenda">Escreva uma legenda…</string>
     <string name="acao_publicar">Publicar</string>
     <string name="acao_cancelar">Cancelar</string>
+    <string name="dialog_titulo_legenda">Legenda da publicação</string>
+    <string name="msg_legenda_vazia">Informe uma legenda antes de publicar.</string>
+    <string name="msg_post_salvo">Publicação salva com sucesso!</string>
+    <string name="msg_erro_autenticacao">Não foi possível conectar ao Firebase: %1$s</string>
 
     <!-- Comentários -->
     <string name="sem_comentarios">Seja o primeiro a comentar.</string>

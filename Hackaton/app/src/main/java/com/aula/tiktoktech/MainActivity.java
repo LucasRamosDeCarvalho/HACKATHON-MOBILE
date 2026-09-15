@@ -2,29 +2,47 @@ package com.aula.tiktoktech;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.aula.tiktoktech.adapter.PostAdapter;
+import com.aula.tiktoktech.data.PostRepository;
+import com.aula.tiktoktech.model.Post;
 import com.cloudinary.android.MediaManager;
 import com.cloudinary.android.callback.ErrorInfo;
 import com.cloudinary.android.callback.UploadCallback;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private static boolean cloudinaryInicializado;
+    private PostRepository postRepository;
+    private ListenerRegistration postsListener;
+    private PostAdapter adapter;
+    private ProgressBar progress;
+    private TextView emptyText;
+    private FloatingActionButton newPhotoButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,59 +55,167 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        FloatingActionButton fabNovaFoto = findViewById(R.id.fabNovaFoto);
-        ProgressBar progress = findViewById(R.id.progress);
-        TextView txtVazio = findViewById(R.id.txtVazio);
+        progress = findViewById(R.id.progress);
+        emptyText = findViewById(R.id.txtVazio);
+        newPhotoButton = findViewById(R.id.fabNovaFoto);
+        newPhotoButton.setEnabled(false);
+        postRepository = new PostRepository();
+        initializeCloudinary();
+        setupRecyclerView();
+        authenticateForDevelopment();
 
-        if (!cloudinaryInicializado) {
-            Map<String, Object> config = new HashMap<>();
-            config.put("cloud_name", getString(R.string.cloudinary_cloud_name));
-            config.put("secure", true);
-            MediaManager.init(getApplicationContext(), config);
-            cloudinaryInicializado = true;
-        }
+        ActivityResultLauncher<PickVisualMediaRequest> photoPicker = registerForActivityResult(
+                new ActivityResultContracts.PickVisualMedia(), uri -> {
+                    if (uri != null) showCaptionDialog(uri);
+                });
 
-        ActivityResultLauncher<PickVisualMediaRequest> selecionarFoto = registerForActivityResult(
-                new ActivityResultContracts.PickVisualMedia(), uri -> uploadPhoto(uri, txtVazio, progress, fabNovaFoto));
-
-        fabNovaFoto.setOnClickListener(view -> selecionarFoto.launch(new PickVisualMediaRequest.Builder()
+        newPhotoButton.setOnClickListener(view -> photoPicker.launch(new PickVisualMediaRequest.Builder()
                 .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build()));
     }
 
-    private void uploadPhoto(Uri uri, TextView txtVazio, ProgressBar progress, FloatingActionButton fabNovaFoto) {
-        if (uri == null) return;
-        txtVazio.setVisibility(View.GONE);
+    private void setupRecyclerView() {
+        RecyclerView recyclerView = findViewById(R.id.recyclerPosts);
+        adapter = new PostAdapter(new PostAdapter.Listener() {
+            @Override public void onLike(Post post) { vote(post, true); }
+            @Override public void onDislike(Post post) { vote(post, false); }
+        });
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
+    }
+
+    private void observePosts() {
+        postsListener = postRepository.listenPosts(new PostRepository.PostsListener() {
+            @Override public void onPostsChanged(List<Post> posts) {
+                runOnUiThread(() -> {
+                    adapter.setPosts(posts);
+                    boolean empty = posts == null || posts.isEmpty();
+                    emptyText.setVisibility(empty ? View.VISIBLE : View.GONE);
+                    progress.setVisibility(View.GONE);
+                });
+            }
+
+            @Override public void onError(String message) {
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    showError(getString(R.string.msg_erro_feed, message));
+                });
+            }
+        });
+    }
+
+    private void authenticateForDevelopment() {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            newPhotoButton.setEnabled(true);
+            observePosts();
+            return;
+        }
+        auth.signInAnonymously()
+                .addOnSuccessListener(result -> {
+                    newPhotoButton.setEnabled(true);
+                    observePosts();
+                })
+                .addOnFailureListener(error -> showError(getString(
+                        R.string.msg_erro_autenticacao, error.getMessage())));
+    }
+
+    private void showCaptionDialog(Uri imageUri) {
+        EditText captionInput = new EditText(this);
+        captionInput.setHint(R.string.hint_legenda);
+        captionInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        captionInput.setMinLines(2);
+        captionInput.setPadding(48, 8, 48, 8);
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_titulo_legenda)
+                .setView(captionInput)
+                .setNegativeButton(R.string.acao_cancelar, null)
+                .setPositiveButton(R.string.acao_publicar, (dialog, which) -> {
+                    String caption = captionInput.getText() == null
+                            ? ""
+                            : captionInput.getText().toString().trim();
+                    if (caption.isEmpty()) {
+                        showError(getString(R.string.msg_legenda_vazia));
+                    } else {
+                        uploadPhoto(imageUri, caption);
+                    }
+                })
+                .show();
+    }
+
+    private void uploadPhoto(Uri imageUri, String caption) {
         progress.setVisibility(View.VISIBLE);
-        fabNovaFoto.setEnabled(false);
+        newPhotoButton.setEnabled(false);
 
         try {
-            MediaManager.get().upload(uri)
+            MediaManager.get().upload(imageUri)
                     .unsigned(getString(R.string.cloudinary_upload_preset))
                     .option("folder", getString(R.string.cloudinary_folder))
                     .callback(new UploadCallback() {
                         @Override public void onStart(String requestId) { }
                         @Override public void onProgress(String requestId, long bytes, long totalBytes) { }
                         @Override public void onReschedule(String requestId, ErrorInfo error) { }
+
                         @Override public void onSuccess(String requestId, Map resultData) {
                             Object value = resultData == null ? null : resultData.get("secure_url");
                             String url = value instanceof String ? (String) value : "";
-                            runOnUiThread(() -> finishUpload(txtVazio, progress, fabNovaFoto,
-                                    url.startsWith("https://") ? url : getString(R.string.msg_url_invalida)));
+                            if (!url.startsWith("https://")) {
+                                runOnUiThread(() -> finishOperation(getString(R.string.msg_url_invalida)));
+                                return;
+                            }
+                            postRepository.savePost(url, caption, new PostRepository.OperationCallback() {
+                                @Override public void onSuccess() {
+                                    runOnUiThread(() -> finishOperation(getString(R.string.msg_post_salvo)));
+                                }
+                                @Override public void onError(String message) {
+                                    runOnUiThread(() -> finishOperation(getString(R.string.msg_erro_salvar, message)));
+                                }
+                            });
                         }
+
                         @Override public void onError(String requestId, ErrorInfo error) {
-                            runOnUiThread(() -> finishUpload(txtVazio, progress, fabNovaFoto,
-                                    getString(R.string.msg_erro_upload, error == null ? "" : error.getDescription())));
+                            runOnUiThread(() -> finishOperation(getString(
+                                    R.string.msg_erro_upload,
+                                    error == null ? "" : error.getDescription())));
                         }
                     }).dispatch();
         } catch (RuntimeException error) {
-            finishUpload(txtVazio, progress, fabNovaFoto, getString(R.string.msg_erro_upload, error.getMessage()));
+            finishOperation(getString(R.string.msg_erro_upload, error.getMessage()));
         }
     }
 
-    private void finishUpload(TextView text, ProgressBar progress, FloatingActionButton button, String message) {
-        text.setText(message);
-        text.setVisibility(View.VISIBLE);
+    private void vote(Post post, boolean like) {
+        if (post.getId() == null) return;
+        postRepository.incrementLike(post.getId(), like, new PostRepository.OperationCallback() {
+            @Override public void onSuccess() { }
+            @Override public void onError(String message) {
+                runOnUiThread(() -> showError(getString(R.string.msg_erro_voto, message)));
+            }
+        });
+    }
+
+    private void initializeCloudinary() {
+        if (cloudinaryInicializado) return;
+        Map<String, Object> config = new HashMap<>();
+        config.put("cloud_name", getString(R.string.cloudinary_cloud_name));
+        config.put("secure", true);
+        MediaManager.init(getApplicationContext(), config);
+        cloudinaryInicializado = true;
+    }
+
+    private void finishOperation(String message) {
         progress.setVisibility(View.GONE);
-        button.setEnabled(true);
+        newPhotoButton.setEnabled(true);
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    private void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (postsListener != null) postsListener.remove();
+        super.onDestroy();
     }
 }
