@@ -1,7 +1,21 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.TikTokTech" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/ambar</item>
+        <item name="colorOnPrimary">@color/marinho</item>
+        <item name="colorPrimaryContainer">@color/ambar_escuro</item>
+        <item name="colorOnPrimaryContainer">@color/white</item>
+        <item name="colorSecondary">@color/marinho_claro</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/ambar</item>
+        <item name="colorOnSecondaryContainer">@color/marinho</item>
+        <item name="android:colorBackground">@color/fundo</item>
+        <item name="colorSurface">@color/superficie</item>
+        <item name="colorOnSurface">@color/texto_forte</item>
+        <item name="colorSurfaceVariant">@color/superficie_fraca</item>
+        <item name="colorOnSurfaceVariant">@color/texto_medio</item>
+        <item name="colorOutline">@color/divisor</item>
+        <item name="android:statusBarColor">@color/ambar_escuro</item>
+        <item name="android:navigationBarColor">@color/fundo</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

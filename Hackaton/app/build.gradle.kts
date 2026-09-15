@@ -40,7 +40,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.recyclerview)
+    implementation(libs.recyclerview)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation(libs.cloudinary.android)

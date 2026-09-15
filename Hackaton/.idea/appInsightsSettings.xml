@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.aula.tiktoktech" />
+                  <option name="mobileSdkAppId" value="1:1073738809681:android:11d9317d17334b37415370" />
+                  <option name="projectId" value="tiktoktech-fd82d" />
+                  <option name="projectNumber" value="1073738809681" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

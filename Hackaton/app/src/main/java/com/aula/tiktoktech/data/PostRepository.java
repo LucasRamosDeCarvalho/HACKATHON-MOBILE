@@ -24,7 +24,7 @@ public class PostRepository {
     private final FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
     public ListenerRegistration listenPosts(PostsListener listener) {
-        return firestore.collection("posts")
+        return firestore.collection("POSTS_2E")
                 .orderBy("criadoEm", Query.Direction.DESCENDING)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null) {
@@ -38,7 +38,7 @@ public class PostRepository {
     }
 
     public void savePost(String url, String descricao, OperationCallback callback) {
-        firestore.collection("posts")
+        firestore.collection("POSTS_2E")
                 .add(new Post(url, descricao))
                 .addOnSuccessListener(document -> callback.onSuccess())
                 .addOnFailureListener(error -> callback.onError(error.getMessage()));
@@ -46,7 +46,7 @@ public class PostRepository {
 
     public void incrementLike(String postId, boolean like, OperationCallback callback) {
         String field = like ? "likes" : "dislikes";
-        firestore.collection("posts").document(postId)
+        firestore.collection("POSTS_2E").document(postId)
                 .update(field, FieldValue.increment(1))
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(error -> callback.onError(error.getMessage()));

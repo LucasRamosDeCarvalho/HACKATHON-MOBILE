@@ -1,8 +1,11 @@
 package com.aula.tiktoktech;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -15,6 +18,7 @@ import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -28,8 +32,8 @@ import com.cloudinary.android.MediaManager;
 import com.cloudinary.android.callback.ErrorInfo;
 import com.cloudinary.android.callback.UploadCallback;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private static boolean cloudinaryInicializado;
     private PostRepository postRepository;
     private ListenerRegistration postsListener;
-    private PostAdapter adapter;
+    private PostAdapter postAdapter;
     private ProgressBar progress;
     private TextView emptyText;
     private FloatingActionButton newPhotoButton;
@@ -49,6 +53,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (view, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -58,38 +69,52 @@ public class MainActivity extends AppCompatActivity {
         progress = findViewById(R.id.progress);
         emptyText = findViewById(R.id.txtVazio);
         newPhotoButton = findViewById(R.id.fabNovaFoto);
-        newPhotoButton.setEnabled(false);
         postRepository = new PostRepository();
+
+        setupToolbar();
+        setupFeed();
         initializeCloudinary();
-        setupRecyclerView();
-        authenticateForDevelopment();
 
         ActivityResultLauncher<PickVisualMediaRequest> photoPicker = registerForActivityResult(
                 new ActivityResultContracts.PickVisualMedia(), uri -> {
                     if (uri != null) showCaptionDialog(uri);
                 });
-
         newPhotoButton.setOnClickListener(view -> photoPicker.launch(new PickVisualMediaRequest.Builder()
                 .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build()));
     }
 
-    private void setupRecyclerView() {
+    private void setupToolbar() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.getMenu().add(R.string.acao_sair).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() != android.R.id.home) {
+                FirebaseAuth.getInstance().signOut();
+                startActivity(new Intent(this, LoginActivity.class));
+                finish();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void setupFeed() {
         RecyclerView recyclerView = findViewById(R.id.recyclerPosts);
-        adapter = new PostAdapter(new PostAdapter.Listener() {
-            @Override public void onLike(Post post) { vote(post, true); }
-            @Override public void onDislike(Post post) { vote(post, false); }
+        postAdapter = new PostAdapter(new PostAdapter.Listener() {
+            @Override public void onLike(Post post) { updateVote(post, true); }
+            @Override public void onDislike(Post post) { updateVote(post, false); }
         });
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
+        recyclerView.setAdapter(postAdapter);
+        observePosts();
     }
 
     private void observePosts() {
+        progress.setVisibility(View.VISIBLE);
         postsListener = postRepository.listenPosts(new PostRepository.PostsListener() {
             @Override public void onPostsChanged(List<Post> posts) {
                 runOnUiThread(() -> {
-                    adapter.setPosts(posts);
-                    boolean empty = posts == null || posts.isEmpty();
-                    emptyText.setVisibility(empty ? View.VISIBLE : View.GONE);
+                    postAdapter.setPosts(posts);
+                    emptyText.setVisibility(posts == null || posts.isEmpty() ? View.VISIBLE : View.GONE);
                     progress.setVisibility(View.GONE);
                 });
             }
@@ -101,22 +126,6 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
-    }
-
-    private void authenticateForDevelopment() {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() != null) {
-            newPhotoButton.setEnabled(true);
-            observePosts();
-            return;
-        }
-        auth.signInAnonymously()
-                .addOnSuccessListener(result -> {
-                    newPhotoButton.setEnabled(true);
-                    observePosts();
-                })
-                .addOnFailureListener(error -> showError(getString(
-                        R.string.msg_erro_autenticacao, error.getMessage())));
     }
 
     private void showCaptionDialog(Uri imageUri) {
@@ -146,7 +155,6 @@ public class MainActivity extends AppCompatActivity {
     private void uploadPhoto(Uri imageUri, String caption) {
         progress.setVisibility(View.VISIBLE);
         newPhotoButton.setEnabled(false);
-
         try {
             MediaManager.get().upload(imageUri)
                     .unsigned(getString(R.string.cloudinary_upload_preset))
@@ -184,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void vote(Post post, boolean like) {
+    private void updateVote(Post post, boolean like) {
         if (post.getId() == null) return;
         postRepository.incrementLike(post.getId(), like, new PostRepository.OperationCallback() {
             @Override public void onSuccess() { }
