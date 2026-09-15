@@ -2,6 +2,18 @@
 <resources>
     <string name="app_name">TikTokTech</string>
     <string name="titulo_comentarios">Comentários</string>
+    <string name="titulo_login">Entrar</string>
+    <string name="titulo_cadastro">Criar conta</string>
+    <string name="hint_email">E-mail</string>
+    <string name="hint_senha">Senha</string>
+    <string name="acao_entrar">Entrar</string>
+    <string name="acao_cadastrar">Cadastrar</string>
+    <string name="acao_criar_conta">Ainda não tenho uma conta</string>
+    <string name="acao_voltar_login">Já tenho uma conta</string>
+    <string name="erro_email_invalido">Digite um e-mail válido.</string>
+    <string name="erro_senha_curta">A senha deve ter pelo menos 6 caracteres.</string>
+    <string name="msg_erro_login">Não foi possível autenticar. Confira seus dados e tente novamente.</string>
+    <string name="acao_sair">Sair</string>
 
     <string name="cloudinary_cloud_name" translatable="false">dikitk54o</string>
     <string name="cloudinary_upload_preset" translatable="false">Tiktoktech</string>
