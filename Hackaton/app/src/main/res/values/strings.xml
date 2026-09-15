@@ -37,6 +37,7 @@
     <string name="msg_erro_upload">Erro ao enviar a imagem: %1$s</string>
     <string name="msg_url_invalida">O envio não retornou uma URL HTTPS.</string>
     <string name="msg_upload_reagendado">Envio aguardando nova tentativa.</string>
+    <string name="msg_login_obrigatorio">É necessário estar identificado para realizar esta ação.</string>
     <string name="msg_erro_salvar">Erro ao salvar: %1$s</string>
     <string name="msg_erro_feed">Erro ao carregar o feed: %1$s</string>
     <string name="msg_erro_voto">Erro ao registrar o voto: %1$s</string>

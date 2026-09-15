@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -19,12 +20,14 @@ import com.cloudinary.android.MediaManager;
 import com.cloudinary.android.callback.ErrorInfo;
 import com.cloudinary.android.callback.UploadCallback;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.aula.tiktoktech.auth.UsuarioPreferences;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private static boolean cloudinaryInicializado;
+    private UsuarioPreferences usuarioPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         FloatingActionButton fabNovaFoto = findViewById(R.id.fabNovaFoto);
         ProgressBar progress = findViewById(R.id.progress);
         TextView txtVazio = findViewById(R.id.txtVazio);
+        usuarioPreferences = new UsuarioPreferences(this);
 
         if (!cloudinaryInicializado) {
             Map<String, Object> config = new HashMap<>();
@@ -58,6 +62,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void uploadPhoto(Uri uri, TextView txtVazio, ProgressBar progress, FloatingActionButton fabNovaFoto) {
         if (uri == null) return;
+        if (!usuarioPreferences.estaIdentificado()) {
+            Toast.makeText(this, R.string.msg_login_obrigatorio, Toast.LENGTH_SHORT).show();
+            return;
+        }
         txtVazio.setVisibility(View.GONE);
         progress.setVisibility(View.VISIBLE);
         fabNovaFoto.setEnabled(false);
