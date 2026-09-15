@@ -1,15 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
-    namespace = "com.aula.hackaton"
+    namespace = "com.aula.tiktoktech"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.aula.hackaton"
+        applicationId = "com.aula.tiktoktech"
         minSdk = 33
         targetSdk = 36
         versionCode = 1
@@ -39,6 +40,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.firebase.firestore)
+    implementation(libs.cloudinary.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
