@@ -12,7 +12,7 @@ recyclerview = "1.4.0"
 glide = "4.16.0"
 googleGmsGoogleServices = "4.5.0"
 firebaseFirestore = "26.6.0"
-firebaseAuth = "24.0.1"
+firebaseAuth = "24.2.0"
 cloudinary = "3.1.2"
 
 [libraries]
